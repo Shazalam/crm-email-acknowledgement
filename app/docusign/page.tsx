@@ -96,7 +96,7 @@ export default function DocuSignPage() {
         acknowledged,
         frontImageBase64: frontBase64,
         backImageBase64: backBase64,
-        device: ua.device.type || "desktop",
+        device: ua.device.type || "desktop",                                                                                                                                              
         browser: `${ua.browser.name || ""} ${ua.browser.version || ""}`.trim(),
         os: `${ua.os.name || ""} ${ua.os.version || ""}`.trim(),
         ip: geo.ip,
