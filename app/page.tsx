@@ -1,18 +1,9 @@
 // app/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Car,
-  Shield,
-  Zap,
-  Star,
-  Clock,
-  Leaf,
-  ArrowRight,
-  Play,
-  Phone
-} from 'lucide-react';
+import { Leaf, Zap, Shield, Clock, Phone, ArrowRight, Play, Car, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+
 
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
@@ -86,7 +77,7 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [testimonials.length]);
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-emerald-50/30 overflow-hidden">
       {/* Enhanced Header with Glass Morphism */}
@@ -349,8 +340,8 @@ export default function Home() {
                     key={index}
                     onClick={() => setActiveTestimonial(index)}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${index === activeTestimonial
-                        ? 'bg-gradient-to-r from-green-500 to-blue-600 w-8'
-                        : 'bg-gray-300 hover:bg-gray-400'
+                      ? 'bg-gradient-to-r from-green-500 to-blue-600 w-8'
+                      : 'bg-gray-300 hover:bg-gray-400'
                       }`}
                   />
                 ))}
