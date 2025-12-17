@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { ArrowRight, Play, Car, Zap, Shield } from 'lucide-react';
 
 interface HeroContentProps {

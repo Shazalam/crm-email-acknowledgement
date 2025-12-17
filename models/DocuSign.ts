@@ -25,7 +25,7 @@
 //   updatedAt: Date;
 // }
 
-// const CustomerSchema = new Schema<ICustomer>({
+// const DocusignSchema = new Schema<ICustomer>({
 //   ip: String,
 //   sessionId: { type: String, index: true },
 //   device: String,
@@ -46,14 +46,24 @@
 //   backImage: String
 // }, { timestamps: true });
 
-// export default mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);
+// export default mongoose.models.Customer || mongoose.model<ICustomer>('Customer', DocusignSchema);
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export interface ICustomer extends Document {
+export interface IDocusign extends Document {
   _id: Types.ObjectId;
   ip?: string;
   sessionId?: string;
@@ -86,7 +96,7 @@ export interface ICustomer extends Document {
   updatedAt: Date;
 }
 
-const CustomerSchema = new Schema<ICustomer>({
+const DocusignSchema = new Schema<IDocusign>({
   ip: String,
   sessionId: { type: String, index: true },
   device: String,
@@ -119,6 +129,6 @@ const CustomerSchema = new Schema<ICustomer>({
 });
 
 // Add index for geospatial queries if needed
-CustomerSchema.index({ 'location.coordinates': '2dsphere' });
+DocusignSchema.index({ 'location.coordinates': '2dsphere' });
 
-export default mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);
+export default mongoose.models.Customer || mongoose.model<IDocusign>('Customer', DocusignSchema);

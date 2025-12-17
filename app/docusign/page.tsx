@@ -762,15 +762,9 @@
 
 
 
-
-
-
-
-
-
 import { Metadata } from 'next';
 import { FileText } from 'lucide-react';
-import DocumentUploadForm from '../components/DocumentUploadForm';
+import DocumentUploadForm from './DocumentUploadForm';
 
 export const metadata: Metadata = {
   title: 'Document Upload | EcoRide',
@@ -798,7 +792,6 @@ export default function DocusignPage() {
             At least one photo (front or back) is required
           </p>
         </div>
-
         {/* Form Component - Client Side */}
         <DocumentUploadForm />
       </div>

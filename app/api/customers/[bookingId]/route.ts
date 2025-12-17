@@ -1,7 +1,7 @@
 // app/api/customers/[bookingId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import connect from '../../../../lib/db';
-import Customer, {ICustomer} from '../../../../models/Customer';
+import connect from '../../../../lib/utils/db';
+import Customer, {ICustomer} from '../../../../models/DocuSign';
 
 type CustomerResponse = {
   ok: boolean;

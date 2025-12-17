@@ -9,22 +9,30 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.8",
     "browser-image-compression": "^2.0.2",
-    "cloudinary": "^2.7.0",
+    "cloudinary": "^2.8.0",
     "geoip-lite": "^1.4.10",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.544.0",
+    "mongodb": "^7.0.0",
     "mongoose": "^8.18.3",
     "next": "^16.0.7",
+    "next-auth": "^4.24.13",
+    "nodemailer": "^7.0.11",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hot-toast": "^2.6.0",
     "ua-parser-js": "^2.0.5",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/geoip-lite": "^1.4.4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

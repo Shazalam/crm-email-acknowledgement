@@ -5,298 +5,13 @@ import {
   Upload,
   CheckCircle,
   AlertCircle,
-  Camera,
-  Loader2,
-  ArrowLeft
+  Loader2
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import imageCompression from 'browser-image-compression';
-
-// Types
-interface LocationInfo {
-  country: string;
-  region: string;
-  city: string;
-  zipcode: string;
-  ip: string;
-  accuracy: string;
-  coordinates?: { lat: number; lng: number };
-  fullAddress: string;
-}
-
-interface AddressData {
-  country: string;
-  region: string;
-  city: string;
-  zipcode: string;
-  fullAddress: string;
-}
-
-interface BrowserInfo {
-  browser: string;
-  os: string;
-}
-
-declare global {
-  interface Navigator {
-    brave?: {
-      isBrave: () => Promise<boolean>;
-    };
-  }
-}
-
-// Utility Functions
-async function fetchWithTimeout(resource: string, options: RequestInit = {}, timeout = 15000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const response = await fetch(resource, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return response;
-  } catch {
-    clearTimeout(id);
-    throw new Error("Network timeout or failed request");
-  }
-}
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Failed to convert file to base64'));
-      }
-    };
-    reader.onerror = () => reject(new Error('File reading failed'));
-    reader.readAsDataURL(file);
-  });
-}
-
-const getAccurateBrowserInfo = async (): Promise<BrowserInfo> => {
-  const ua = navigator.userAgent;
-  let fullBrowser = "Unknown Browser";
-  let os = "Unknown OS";
-
-  try {
-    if (navigator.brave && (await navigator.brave.isBrave())) {
-      fullBrowser = "Brave (version hidden)";
-    } else {
-      const browserPatterns = [
-        { pattern: /Vivaldi\/([\d.]+)/, name: "Vivaldi" },
-        { pattern: /Edg\/([\d.]+)/, name: "Edge" },
-        { pattern: /Trident\/.*rv:([\d.]+)/, name: "Internet Explorer" },
-        { pattern: /Firefox\/([\d.]+)/, name: "Firefox" },
-        { pattern: /OPR\/([\d.]+)/, name: "Opera" },
-        { pattern: /Opera.*Version\/([\d.]+)/, name: "Opera" },
-        { pattern: /Chrome\/([\d.]+)/, name: "Chrome" },
-        { pattern: /Version\/([\d.]+).*Safari/, name: "Safari" },
-        { pattern: /Safari\/([\d.]+)/, name: "Safari" },
-      ];
-
-      for (const { pattern, name } of browserPatterns) {
-        const match = ua.match(pattern);
-        if (match) {
-          // ✅ FIX #1: Use match[1] to get the captured version number
-          fullBrowser = `${name} ${match[1]}`;
-          break;
-        }
-      }
-    }
-
-    if (ua.includes("Windows NT 10.0")) os = "Windows 10/11";
-    else if (ua.includes("Windows NT 6.3")) os = "Windows 8.1";
-    else if (ua.includes("Windows NT 6.2")) os = "Windows 8";
-    else if (ua.includes("Windows NT 6.1")) os = "Windows 7";
-    else if (ua.includes("Windows NT 6.0")) os = "Windows Vista";
-    else if (ua.includes("Windows NT 5.1")) os = "Windows XP";
-    else if (ua.includes("Windows")) os = "Windows";
-    else if (ua.includes("Macintosh") || ua.includes("Mac OS X")) {
-      const versionMatch = ua.match(/Mac OS X ([0-9_]+)/);
-      // ✅ FIX #1: Use versionMatch[1] to get the version, not the entire match array
-      os = versionMatch ? `macOS ${versionMatch[1].replace(/_/g, ".")}` : "macOS";
-    } else if (ua.includes("Android")) {
-      const versionMatch = ua.match(/Android ([0-9.]+)/);
-      // ✅ FIX #1: Use versionMatch[1] to get the version
-      os = versionMatch ? `Android ${versionMatch[1]}` : "Android";
-    } else if (ua.includes("iPhone") || ua.includes("iPad") || ua.includes("iOS")) {
-      const versionMatch = ua.match(/OS ([0-9_]+)/);
-      // ✅ FIX #1: Use versionMatch[1] to get the version, not the entire match array
-      os = versionMatch ? `iOS ${versionMatch[1].replace(/_/g, ".")}` : "iOS";
-    } else if (ua.includes("Linux")) os = "Linux";
-    else if (ua.includes("X11")) os = "Unix";
-  } catch {
-    console.warn("Error detecting browser info");
-  }
-
-  return { browser: fullBrowser, os };
-};
-
-async function getAddressFromCoords(lat: number, lng: number): Promise<AddressData> {
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
-    );
-
-    if (!response.ok) throw new Error('Geocoding failed');
-
-    const data = await response.json();
-
-    if (data?.address) {
-      return {
-        country: data.address.country || 'Unknown',
-        region: data.address.state || data.address.region || 'Unknown',
-        city: data.address.city || data.address.town || data.address.village || 'Unknown',
-        zipcode: data.address.postcode || 'Unknown',
-        fullAddress: data.display_name || 'Unknown'
-      };
-    }
-
-    throw new Error('No address data received');
-  } catch {
-    console.error('Reverse geocoding error');
-
-    try {
-      const ipResponse = await fetch('https://ipapi.co/json/');
-      const ipData = await ipResponse.json();
-
-      return {
-        country: ipData.country_name || 'Unknown',
-        region: ipData.region || ipData.region_code || 'Unknown',
-        city: ipData.city || 'Unknown',
-        zipcode: ipData.postal || ipData.postal_code || 'Unknown',
-        fullAddress: `${ipData.city || ''}, ${ipData.region || ''}, ${ipData.country_name || ''}`.trim()
-      };
-    } catch {
-      console.error('IP-based location also failed');
-    }
-
-    return {
-      country: 'Unknown',
-      region: 'Unknown',
-      city: 'Unknown',
-      zipcode: 'Unknown',
-      fullAddress: 'Location detection failed'
-    };
-  }
-}
-
-async function getAccurateIP(): Promise<string> {
-  try {
-    const ipServices = [
-      'https://api.ipify.org?format=json',
-      'https://api64.ipify.org?format=json',
-      'https://ip.seeip.org/json'
-    ];
-
-    for (const service of ipServices) {
-      try {
-        const response = await fetch(service);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.ip) return data.ip;
-        }
-      } catch {
-        console.warn(`IP service ${service} failed`);
-        continue;
-      }
-    }
-
-    return 'Unknown';
-  } catch {
-    console.error('All IP services failed');
-    return 'Unknown';
-  }
-}
-
-// File Upload Area Component
-interface FileUploadAreaProps {
-  type: 'front' | 'back';
-  file: File | null;
-  preview: string | null;
-  // ✅ FIX #3: Allow null in the ref type
-  inputRef: React.RefObject<HTMLInputElement | null>;
-  onFileSelect: (file: File | null, type: 'front' | 'back') => void;
-  onRemove: (type: 'front' | 'back') => void;
-  loading: boolean;
-}
-
-function FileUploadArea({
-  type,
-  file,
-  preview,
-  inputRef,
-  onFileSelect,
-  onRemove,
-  loading
-}: FileUploadAreaProps) {
-  return (
-    <div className="relative group">
-      <div
-        className={`
-          border-2 border-dashed rounded-2xl p-6 transition-all duration-300 cursor-pointer
-          hover:border-green-400 hover:bg-green-50/50
-          ${preview ? 'border-green-400 bg-green-50' : 'border-gray-300'}
-          ${loading ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-        onClick={() => !loading && inputRef.current?.click()}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          // ✅ FIX #2: Complete the optional chaining with [0]
-          onChange={(e) => onFileSelect(e.target.files?.[0] || null, type)}
-          disabled={loading}
-        />
-        {preview ? (
-          <div className="text-center">
-            <div className="relative inline-block">
-              <Image
-                src={preview}
-                alt={`${type} preview`}
-                width={200}
-                height={128}
-                loading="lazy"
-                className="h-32 w-auto rounded-lg shadow-md mx-auto object-cover"
-              />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(type);
-                }}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition-colors"
-                disabled={loading}
-              >
-                <AlertCircle className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="mt-3 text-sm font-medium text-green-700 truncate">{file?.name}</p>
-            <p className="text-xs text-gray-500 mt-1">Click to change photo</p>
-          </div>
-        ) : (
-          <div className="text-center">
-            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-gray-100 group-hover:bg-green-100 transition-colors">
-              <Camera className="h-6 w-6 text-gray-400 group-hover:text-green-500" />
-            </div>
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-900">
-                Upload {type === 'front' ? 'Front' : 'Back'} Photo
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Click to browse or use camera</p>
-              <p className="text-xs text-gray-400 mt-1">PNG, JPG, WEBP up to 10MB</p>
-              <p className="text-xs text-yellow-600 mt-1">Optional</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+import { LocationInfo } from '../types/shared/docusign';
+import FileUploadArea from '../components/FileUploadArea';
+import { fetchWithTimeout, fileToBase64, getAccurateBrowserInfo, getAccurateIP, getAddressFromCoords } from '@/lib/utils/frontend/documentUploadForm';
 
 // Main Component
 export default function DocumentUploadForm() {
@@ -332,7 +47,10 @@ export default function DocumentUploadForm() {
         try {
           const ipLocationResponse = await fetch('https://ipapi.co/json/');
           const ipLocationData = await ipLocationResponse.json();
+          console.log("ipLocationData =>", ipLocationData)
 
+
+          
           setLocationInfo({
             country: ipLocationData.country_name || 'Unknown',
             region: ipLocationData.region || ipLocationData.region_code || 'Unknown',
@@ -642,10 +360,10 @@ export default function DocumentUploadForm() {
         <p className="text-gray-600 mb-6">
           Thank you for uploading your documents. Our team will review them shortly.
         </p>
-        <Link href="/" className="inline-flex items-center justify-center py-2 px-6 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors">
+        {/* <Link href="/" className="inline-flex items-center justify-center py-2 px-6 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Home
-        </Link>
+        </Link> */}
       </div>
     );
   }
@@ -714,12 +432,12 @@ export default function DocumentUploadForm() {
             )}
           </button>
 
-          <Link
+          {/* <Link
             href="/"
             className="inline-flex items-center justify-center py-4 px-6 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Cancel
-          </Link>
+          </Link> */}
         </div>
 
         {/* {locationPermission !== 'granted' && (
@@ -742,15 +460,12 @@ export default function DocumentUploadForm() {
         )} */}
 
         {message && (
-          <div className={`rounded-2xl p-4 flex items-start space-x-3 ${
-            message.type === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
-          }`}>
-            <AlertCircle className={`h-5 w-5 ${
-              message.type === 'error' ? 'text-red-500' : 'text-green-500'
-            } mt-0.5 flex-shrink-0`} />
-            <p className={`text-sm ${
-              message.type === 'error' ? 'text-red-700' : 'text-green-700'
-            }`}>{message.text}</p>
+          <div className={`rounded-2xl p-4 flex items-start space-x-3 ${message.type === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
+            }`}>
+            <AlertCircle className={`h-5 w-5 ${message.type === 'error' ? 'text-red-500' : 'text-green-500'
+              } mt-0.5 flex-shrink-0`} />
+            <p className={`text-sm ${message.type === 'error' ? 'text-red-700' : 'text-green-700'
+              }`}>{message.text}</p>
           </div>
         )}
       </form>
