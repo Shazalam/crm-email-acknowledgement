@@ -98,7 +98,6 @@ export async function getAddressFromCoords(lat: number, lng: number): Promise<Ad
     if (!response.ok) throw new Error('Geocoding failed');
 
     const data = await response.json();
-    console.log("address =>", data)
 
     if (data?.address) {
       return {
@@ -112,7 +111,6 @@ export async function getAddressFromCoords(lat: number, lng: number): Promise<Ad
 
     throw new Error('No address data received');
   } catch {
-    console.error('Reverse geocoding error');
 
     try {
       const ipResponse = await fetch('https://ipapi.co/json/');
