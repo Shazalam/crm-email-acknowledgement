@@ -1,6 +1,6 @@
 import Customer from '@/models/DocuSign';
 import { v4 as uuidv4 } from 'uuid';
-import type { DocusignRequestBody } from '@/app/types/shared/docusign';
+import type { CloudinaryUploadResult, DocusignRequestBody } from '@/app/types/shared/docusign';
 import { normalizeLocation } from '@/lib/helpers/backend-helpers/location.helper';
 
 export async function saveDocusignDocument(

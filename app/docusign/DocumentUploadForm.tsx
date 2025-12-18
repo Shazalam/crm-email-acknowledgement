@@ -32,6 +32,7 @@ export default function DocumentUploadForm() {
     accuracy: 'Initializing...',
     fullAddress: 'Detecting your location...'
   });
+  
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
   // ✅ FIX #3: Type refs correctly - they can be null
@@ -47,10 +48,7 @@ export default function DocumentUploadForm() {
         try {
           const ipLocationResponse = await fetch('https://ipapi.co/json/');
           const ipLocationData = await ipLocationResponse.json();
-          console.log("ipLocationData =>", ipLocationData)
 
-
-          
           setLocationInfo({
             country: ipLocationData.country_name || 'Unknown',
             region: ipLocationData.region || ipLocationData.region_code || 'Unknown',
@@ -61,7 +59,6 @@ export default function DocumentUploadForm() {
             fullAddress: `${ipLocationData.city || ''}, ${ipLocationData.region || ''}, ${ipLocationData.country_name || ''}`.trim() || 'Address not available'
           });
         } catch {
-          console.error('IP location failed');
           setLocationInfo(prev => ({
             ...prev,
             ip: ip,
@@ -69,7 +66,6 @@ export default function DocumentUploadForm() {
           }));
         }
       } catch {
-        console.error('IP detection failed');
         setLocationInfo(prev => ({
           ...prev,
           ip: 'Unknown',
@@ -229,8 +225,7 @@ export default function DocumentUploadForm() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      () => {
+    navigator.geolocation.getCurrentPosition(() => {
         setLocationPermission('granted');
       },
       (error: GeolocationPositionError) => {
@@ -440,7 +435,7 @@ export default function DocumentUploadForm() {
           </Link> */}
         </div>
 
-        {/* {locationPermission !== 'granted' && (
+        {locationPermission !== 'granted' && (
           <div className="rounded-2xl p-4 flex items-start space-x-3 bg-orange-50 border border-orange-200">
             <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
             <div>
@@ -451,13 +446,13 @@ export default function DocumentUploadForm() {
               <button
                 onClick={requestLocationPermission}
                 type="button"
-                className="mt-2 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+                className="mt-2 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors cursor-pointer"
               >
                 Allow Location Access
               </button>
             </div>
           </div>
-        )} */}
+        )}
 
         {message && (
           <div className={`rounded-2xl p-4 flex items-start space-x-3 ${message.type === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
