@@ -31,13 +31,13 @@ const documentUploadSchema = z.object({
   screenResolution: z.string(),
   timezone: z.string(),
   language: z.string(),
-  locationPermission: z.enum(['granted', 'denied', 'prompt']),
+  // locationPermission: z.enum(['granted', 'denied', 'prompt']),
 });
 
 export class RequestValidator {
   static validateDocumentUpload(body: unknown) {
     const result = documentUploadSchema.safeParse(body);
-    console.log("result =>", result)
+
     if (!result.success) {
       const message = result.error.issues
         .map(issue => issue.message)

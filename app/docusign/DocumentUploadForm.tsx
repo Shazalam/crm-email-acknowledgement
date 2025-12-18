@@ -1,175 +1,53 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   Upload,
   CheckCircle,
   AlertCircle,
   Loader2
 } from 'lucide-react';
-import Link from 'next/link';
-import imageCompression from 'browser-image-compression';
-import { LocationInfo } from '../types/shared/docusign';
 import FileUploadArea from '../components/FileUploadArea';
-import { fetchWithTimeout, fileToBase64, getAccurateBrowserInfo, getAccurateIP, getAddressFromCoords } from '@/lib/utils/frontend/documentUploadForm';
+import { useLocation } from '../hooks/useLocation';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { setMessage } from '../redux/features/documentUpload/documentUploadSlice';
+import { uploadDocuments } from '../redux/features/documentUpload/documentUploadThunks';
+import { selectUploadAcknowledged, selectUploadLoading, selectUploadMessage, selectUploadStep } from '../redux/features/documentUpload/documentUploadSelectors';
 
-// Main Component
+
 export default function DocumentUploadForm() {
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'complete'>('upload');
-  const [acknowledged, setAcknowledged] = useState(true);
-  const [locationInfo, setLocationInfo] = useState<LocationInfo>({
-    country: 'Detecting...',
-    region: 'Detecting...',
-    city: 'Detecting...',
-    zipcode: 'Detecting...',
-    ip: 'Detecting...',
-    accuracy: 'Initializing...',
-    fullAddress: 'Detecting your location...'
-  });
-  
-  const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
-  // ✅ FIX #3: Type refs correctly - they can be null
+  const dispatch = useAppDispatch();
+
+  const loading = useAppSelector(selectUploadLoading);
+  const message = useAppSelector(selectUploadMessage);
+  const currentStep = useAppSelector(selectUploadStep);
+  const acknowledged = useAppSelector(selectUploadAcknowledged);
+
+  const {
+    locationInfo,
+    permission,
+    loading: locationLoading,
+    requestPermission
+  } = useLocation();
+
   const frontInputRef = useRef<HTMLInputElement | null>(null);
   const backInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Initialize location on mount
-  useEffect(() => {
-    const initializeLocation = async () => {
-      try {
-        const ip = await getAccurateIP();
-
-        try {
-          const ipLocationResponse = await fetch('https://ipapi.co/json/');
-          const ipLocationData = await ipLocationResponse.json();
-
-          setLocationInfo({
-            country: ipLocationData.country_name || 'Unknown',
-            region: ipLocationData.region || ipLocationData.region_code || 'Unknown',
-            city: ipLocationData.city || 'Unknown',
-            zipcode: ipLocationData.postal || ipLocationData.postal_code || 'Unknown',
-            ip: ip,
-            accuracy: 'IP-based (approximate)',
-            fullAddress: `${ipLocationData.city || ''}, ${ipLocationData.region || ''}, ${ipLocationData.country_name || ''}`.trim() || 'Address not available'
-          });
-        } catch {
-          setLocationInfo(prev => ({
-            ...prev,
-            ip: ip,
-            accuracy: 'IP-based (limited)'
-          }));
-        }
-      } catch {
-        setLocationInfo(prev => ({
-          ...prev,
-          ip: 'Unknown',
-          accuracy: 'Detection failed'
-        }));
-      }
-    };
-
-    initializeLocation();
-  }, []);
-
-  // Get exact GPS location
-  useEffect(() => {
-    const getExactLocation = async () => {
-      if (!navigator.geolocation) {
-        setLocationInfo(prev => ({
-          ...prev,
-          accuracy: 'GPS not supported',
-          country: 'GPS Unavailable',
-          region: 'Use IP location',
-          city: 'N/A',
-          zipcode: 'N/A',
-          fullAddress: 'GPS not supported by browser'
-        }));
-        return;
-      }
-
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-          });
-        });
-
-        const { latitude, longitude } = position.coords;
-        const accuracy = position.coords.accuracy;
-
-        console.log('📍 GPS Coordinates:', { latitude, longitude, accuracy: `${accuracy}m` });
-
-        const address = await getAddressFromCoords(latitude, longitude);
-        const currentIP = await getAccurateIP();
-
-        setLocationInfo({
-          country: address.country,
-          region: address.region,
-          city: address.city,
-          zipcode: address.zipcode,
-          ip: currentIP,
-          accuracy: `GPS (${Math.round(accuracy)}m accuracy)`,
-          coordinates: { lat: latitude, lng: longitude },
-          fullAddress: address.fullAddress
-        });
-
-        setLocationPermission('granted');
-      } catch (error: unknown) {
-        console.error('GPS Error:', error);
-        const errorCode = (error as GeolocationPositionError).code;
-
-        if (errorCode === 1) {
-          setLocationPermission('denied');
-          setLocationInfo(prev => ({
-            ...prev,
-            accuracy: 'Permission denied - using IP location',
-            country: 'Location access required',
-            region: 'Please enable location',
-            city: 'for accurate detection',
-            zipcode: 'N/A',
-            fullAddress: 'Location access denied by user'
-          }));
-        } else {
-          setLocationInfo(prev => ({
-            ...prev,
-            accuracy: 'GPS unavailable - using IP location',
-            country: 'Location unavailable',
-            region: 'Check permissions',
-            city: 'or try again',
-            zipcode: 'N/A',
-            fullAddress: 'GPS location detection failed'
-          }));
-        }
-      }
-    };
-
-    if (window.isSecureContext) {
-      getExactLocation();
-    } else {
-      setLocationInfo(prev => ({
-        ...prev,
-        accuracy: 'GPS requires HTTPS',
-        fullAddress: 'GPS requires secure connection (HTTPS)'
-      }));
-    }
-  }, []);
 
   const handleFileSelect = async (file: File | null, type: 'front' | 'back') => {
     if (file) {
       if (!file.type.startsWith('image/')) {
-        setMessage({ text: 'Please upload an image file', type: 'error' });
+        dispatch(setMessage({ text: 'Please upload an image file', type: 'error' }));
         return;
       }
 
       try {
+        const imageCompression = (await import('browser-image-compression')).default;
         const compressedFile = await imageCompression(file, {
           maxSizeMB: 2,
           maxWidthOrHeight: 1920,
@@ -186,10 +64,15 @@ export default function DocumentUploadForm() {
           setBackPreview(previewUrl);
         }
 
-        setMessage(null);
+        dispatch(setMessage(null as any)); // or create separate action to clear
       } catch {
-        console.error("Image compression failed");
-        setMessage({ text: 'Image compression failed. Please try again.', type: 'error' });
+        console.error('Image compression failed');
+        dispatch(
+          setMessage({
+            text: 'Image compression failed. Please try again.',
+            type: 'error',
+          })
+        );
       }
     }
   };
@@ -206,145 +89,20 @@ export default function DocumentUploadForm() {
     }
   };
 
-  const requestLocationPermission = () => {
-    setLocationPermission('prompt');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!navigator.geolocation) {
-      setMessage({
-        text: "Geolocation is not supported by this browser.",
-        type: "error"
-      });
-      return;
-    }
-
-    if (!window.isSecureContext) {
-      setMessage({
-        text: "GPS location requires HTTPS secure connection.",
-        type: "error"
-      });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(() => {
-        setLocationPermission('granted');
-      },
-      (error: GeolocationPositionError) => {
-        setLocationPermission('denied');
-        let errorMessage = "Location access is required for accurate address detection.";
-
-        if (error.code === 1) {
-          errorMessage = "Location access was denied. Please enable location permissions in your browser settings.";
-        } else if (error.code === 2) {
-          errorMessage = "Location unavailable. Please check your device location settings.";
-        } else if (error.code === 3) {
-          errorMessage = "Location request timed out. Please try again.";
-        }
-
-        setMessage({
-          text: errorMessage,
-          type: "error"
-        });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      }
+    dispatch(
+      uploadDocuments({
+        frontFile,
+        backFile,
+        acknowledged,
+        permission,
+        locationInfo
+      })
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!acknowledged) {
-      setMessage({ text: "⚠️ Please confirm acknowledgment before submitting.", type: "error" });
-      return;
-    }
-
-    if (!frontFile && !backFile) {
-      setMessage({ text: "Please upload at least one photo (front or back).", type: "error" });
-      return;
-    }
-
-    if (locationPermission !== 'granted') {
-      setMessage({
-        text: "⚠️ Location access is recommended for document verification. Submitting without precise location.",
-        type: "error"
-      });
-    }
-
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const browserInfo = await getAccurateBrowserInfo();
-
-      const [frontBase64, backBase64] = await Promise.all([
-        frontFile ? fileToBase64(frontFile) : Promise.resolve(null),
-        backFile ? fileToBase64(backFile) : Promise.resolve(null),
-      ]);
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const bookingId = urlParams.get("bookingId");
-
-      const payload = {
-        bookingId,
-        acknowledged,
-        frontImageBase64: frontBase64,
-        backImageBase64: backBase64,
-        device: /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-        browser: browserInfo.browser || 'Unknown Browser',
-        os: browserInfo.os || 'Unknown OS',
-        ip: locationInfo?.ip || 'Unknown',
-        location: {
-          country: locationInfo.country,
-          region: locationInfo.region,
-          city: locationInfo.city,
-          zipcode: locationInfo.zipcode,
-          accuracy: locationInfo.accuracy,
-          fullAddress: locationInfo.fullAddress,
-          coordinates: locationInfo.coordinates
-        },
-        userAgent: navigator.userAgent,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        language: navigator.language,
-        locationPermission: locationPermission
-      };
-
-      console.log('🚀 Final payload:', payload);
-
-      const res = await fetchWithTimeout("/api/docusign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (data.ok) {
-        setMessage({
-          text: "✅ Thanks! Your documents & acknowledgment have been received.",
-          type: "success",
-        });
-        setCurrentStep("complete");
-      } else {
-        setMessage({
-          text: `Upload failed: ${data.message || "Please try again."}`,
-          type: "error",
-        });
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Unexpected error";
-      setMessage({
-        text: `Upload error: ${errorMessage}. Please try again.`,
-        type: "error"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Completion view
   if (currentStep === 'complete') {
     return (
       <div className="bg-white rounded-3xl shadow-xl p-10 max-w-lg text-center">
@@ -355,15 +113,10 @@ export default function DocumentUploadForm() {
         <p className="text-gray-600 mb-6">
           Thank you for uploading your documents. Our team will review them shortly.
         </p>
-        {/* <Link href="/" className="inline-flex items-center justify-center py-2 px-6 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Link> */}
       </div>
     );
   }
 
-  // Upload form view
   return (
     <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -393,7 +146,7 @@ export default function DocumentUploadForm() {
             type="checkbox"
             id="acknowledge"
             checked={acknowledged}
-            onChange={(e) => setAcknowledged(e.target.checked)}
+            // onChange={(e) => dispatch(setAcknowledged(e.target.checked))}
             className="mt-1 h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
           />
           <label htmlFor="acknowledge" className="text-sm text-gray-700">
@@ -426,16 +179,9 @@ export default function DocumentUploadForm() {
               </>
             )}
           </button>
-
-          {/* <Link
-            href="/"
-            className="inline-flex items-center justify-center py-4 px-6 border border-gray-300 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </Link> */}
         </div>
 
-        {locationPermission !== 'granted' && (
+        {permission !== 'granted' && (
           <div className="rounded-2xl p-4 flex items-start space-x-3 bg-orange-50 border border-orange-200">
             <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
             <div>
@@ -444,7 +190,7 @@ export default function DocumentUploadForm() {
                 GPS location provides more accurate address verification. You can still submit with IP-based location.
               </p>
               <button
-                onClick={requestLocationPermission}
+                onClick={requestPermission}
                 type="button"
                 className="mt-2 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors cursor-pointer"
               >
@@ -455,12 +201,25 @@ export default function DocumentUploadForm() {
         )}
 
         {message && (
-          <div className={`rounded-2xl p-4 flex items-start space-x-3 ${message.type === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'
-            }`}>
-            <AlertCircle className={`h-5 w-5 ${message.type === 'error' ? 'text-red-500' : 'text-green-500'
-              } mt-0.5 flex-shrink-0`} />
-            <p className={`text-sm ${message.type === 'error' ? 'text-red-700' : 'text-green-700'
-              }`}>{message.text}</p>
+          <div
+            className={`rounded-2xl p-4 flex items-start space-x-3 ${
+              message.type === 'error'
+                ? 'bg-red-50 border border-red-200'
+                : 'bg-green-50 border border-green-200'
+            }`}
+          >
+            <AlertCircle
+              className={`h-5 w-5 ${
+                message.type === 'error' ? 'text-red-500' : 'text-green-500'
+              } mt-0.5 flex-shrink-0`}
+            />
+            <p
+              className={`text-sm ${
+                message.type === 'error' ? 'text-red-700' : 'text-green-700'
+              }`}
+            >
+              {message.text}
+            </p>
           </div>
         )}
       </form>
