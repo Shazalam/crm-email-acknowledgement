@@ -98,6 +98,7 @@ export async function getAddressFromCoords(lat: number, lng: number): Promise<Ad
     if (!response.ok) throw new Error('Geocoding failed');
 
     const data = await response.json();
+    console.log("address =>", data)
 
     if (data?.address) {
       return {
@@ -150,7 +151,7 @@ export async function getAccurateIP(): Promise<string> {
       try {
         const response = await fetch(service);
         if (response.ok) {
-          const data = await response.json();
+            const data = await response.json();
           if (data.ip) return data.ip;
         }
       } catch {

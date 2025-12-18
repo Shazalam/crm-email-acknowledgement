@@ -1,11 +1,11 @@
 // app/api/customers/[bookingId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connect from '../../../../lib/utils/db';
-import Customer, {ICustomer} from '../../../../models/DocuSign';
+import DocuSign, { IDocusign } from '@/models/DocuSign';
 
 type CustomerResponse = {
   ok: boolean;
-  customer?: ICustomer | null;
+  customer?: IDocusign | null;
   message?: string;
 };
 
@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Find customer by bookingId (ObjectId string)
-    const customer = await Customer.findOne({ bookingId }).lean<ICustomer>();
+    const customer = await DocuSign.findOne({ bookingId }).lean<IDocusign>();
 
     if (!customer) {
       return NextResponse.json(

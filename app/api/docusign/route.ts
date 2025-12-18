@@ -214,19 +214,26 @@
 
 
 
+
+
+
+
+
+
+
 import { uploadBase64Image } from "@/lib/helpers/backend-helpers/cloudinary.helper";
 import { saveDocusignDocument } from "@/lib/services/docusign/docusign.service";
 import { created } from "@/lib/utils/apiResponse";
 import connectDB from "@/lib/utils/db";
 import { NextRequest } from "next/server";
 import { createRequestContext } from "@/lib/helpers/backend-helpers/request-context.helper";
+import { RequestValidator } from "@/lib/validators/request.validator";
 
 export async function POST(request: NextRequest) {
   const context = createRequestContext(request);
 
-  // await rateLimit(request, RATE_LIMIT_CONFIG);
-
   const body = await request.json();
+
   RequestValidator.validateDocumentUpload(body);
 
   await connectDB();
@@ -236,9 +243,10 @@ export async function POST(request: NextRequest) {
     body.backImageBase64 && uploadBase64Image(body.backImageBase64, 'docusign/back'),
   ]);
 
-  const customer = await saveDocusignDocument(body, front, back);
+  console.log("front image =>", front)
+  console.log("back image =>", back)
 
-  // await logAuditEntry(customer._id.toString(), body.bookingId, true, context);
+  const customer = await saveDocusignDocument(body, front, back);
 
   return created({
     customerId: customer._id.toString(),

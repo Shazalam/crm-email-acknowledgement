@@ -4,7 +4,7 @@ export interface LocationInfo {
   region: string;
   city: string;
   zipcode: string;
-  ip: string;
+  ip?: string;
   accuracy: string;
   fullAddress: string;
   coordinates?: {

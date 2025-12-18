@@ -1,6 +1,6 @@
-import type { LocationData } from '@/app/types/shared/docusign';
+import { LocationInfo } from "@/app/types/shared/docusign";
 
-export function normalizeLocation(location: any): LocationData {
+export function normalizeLocation(location: any): LocationInfo {
   return {
     country: location?.country ?? 'Unknown',
     region: location?.region ?? 'Unknown',
