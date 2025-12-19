@@ -15,7 +15,6 @@ import { setMessage } from '../redux/features/documentUpload/documentUploadSlice
 import { uploadDocuments } from '../redux/features/documentUpload/documentUploadThunks';
 import { selectUploadAcknowledged, selectUploadLoading, selectUploadMessage, selectUploadStep } from '../redux/features/documentUpload/documentUploadSelectors';
 
-
 export default function DocumentUploadForm() {
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
@@ -130,6 +129,7 @@ export default function DocumentUploadForm() {
             onRemove={removeFile}
             loading={loading}
           />
+          
           <FileUploadArea
             type="back"
             file={backFile}

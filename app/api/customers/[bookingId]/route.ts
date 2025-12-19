@@ -28,7 +28,7 @@ export async function GET(
 
     // Find customer by bookingId (ObjectId string)
     const customer = await DocuSign.findOne({ bookingId }).lean<IDocusign>();
-
+    
     if (!customer) {
       return NextResponse.json(
         { ok: false, message: 'Customer not found for this booking ID' },
