@@ -1,125 +1,65 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useLocation } from '../hooks/useLocation';
+import { useAppDispatch } from '../hooks/useAppDispatch';
+import { useAppSelector } from '../hooks/useAppSelector';
+import { uploadAcknowledgement } from '../redux/features/documentUpload/documentUploadThunks';
 import {
-  getAccurateIP,
-  getAccurateBrowserInfo,
-  getAddressFromCoords
-} from '@/lib/utils/frontend/documentUploadForm';
+  selectUploadAckLoading,
+  selectUploadAckMessage,
+} from '../redux/features/documentUpload/documentUploadSelectors';
 
 export default function ContextCollector() {
-  const [acknowledged, setAcknowledged] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
 
+  const {
+    locationInfo,
+  } = useLocation();
+
+  const ackLoading = useAppSelector(selectUploadAckLoading);
+  const ackMessage = useAppSelector(selectUploadAckMessage);
+
+  // Auto-acknowledge with device/location when location is ready
   useEffect(() => {
-    const collectContext = async () => {
-      try {
-        const browserInfo = await getAccurateBrowserInfo();
-        const ip = await getAccurateIP();
+    if (!locationInfo) return;
 
-        let location = {
-          country: 'Unknown',
-          region: 'Unknown',
-          city: 'Unknown',
-          zipcode: 'Unknown',
-          accuracy: 'IP-based',
-          fullAddress: 'Unavailable'
-        };
-
-        // Silent GPS attempt
-        if (navigator.geolocation && window.isSecureContext) {
-          try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000
-              })
-            );
-
-            const address = await getAddressFromCoords(
-              position.coords.latitude,
-              position.coords.longitude
-            );
-
-            location = {
-              ...address,
-              accuracy: `GPS (${Math.round(position.coords.accuracy)}m)`
-            };
-          } catch {
-            // fallback silently
-          }
-        }
-
-        const payload = {
-          device: /Mobi|Android|iPhone/i.test(navigator.userAgent)
-            ? 'mobile'
-            : 'desktop',
-          browser: browserInfo.browser,
-          os: browserInfo.os,
-          ip,
-          location,
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          language: navigator.language,
-        };
-
-        const res = await fetch('/api/verification/context', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-
-        if (data.ok) {
-          localStorage.setItem('verificationContextId', data.contextId);
-          setMessage('Verification details collected successfully.');
-        } else {
-          setMessage('Failed to collect verification details.');
-        }
-      } catch {
-        setMessage('Something went wrong while collecting verification details.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    collectContext();
-  }, []);
+    dispatch(
+      uploadAcknowledgement({
+        acknowledged: true,
+        locationInfo,
+      })
+    );
+  }, [dispatch, locationInfo]);
 
   return (
-    <div className="max-w-md bg-white p-6 rounded-2xl shadow">
+    <div className="max-w-md bg-white p-6 rounded-2xl shadow mb-4">
       <h1 className="text-xl font-semibold mb-3">
         Verification Initialization
       </h1>
 
-      {loading && <p>Collecting verification details…</p>}
-
-      {message && (
-        <p className="text-sm text-gray-700 mb-4">{message}</p>
+      {ackLoading && (
+        <p className="text-sm text-gray-600">
+          Collecting verification details…
+        </p>
       )}
 
-      <label className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          checked={acknowledged}
-          onChange={(e) => setAcknowledged(e.target.checked)}
-        />
-        <span className="text-sm">
-          I acknowledge that my device and location information is collected
-          for verification.
-        </span>
-      </label>
+      {!ackLoading && ackMessage && (
+        <p className="text-sm text-gray-700">
+          {ackMessage}
+        </p>
+      )}
 
-      <button
-        disabled={!acknowledged}
-        onClick={() => (window.location.href = '/verify/documents')}
-        className="mt-4 w-full bg-green-600 text-white py-2 rounded-lg disabled:bg-gray-300"
-      >
-        Continue to Upload Documents
-      </button>
+      {!ackLoading && !ackMessage && (
+        <p className="text-sm text-gray-700">
+          Device and location details recorded for verification.
+        </p>
+      )}
+
+      <p className="mt-3 text-xs text-gray-500">
+        Your device, browser, IP, and location information are collected only for
+        verification and fraud prevention.
+      </p>
     </div>
   );
 }

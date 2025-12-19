@@ -1,7 +1,7 @@
 'use client';
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { uploadDocuments } from './documentUploadThunks';
+import { uploadDocuments, uploadAcknowledgement } from './documentUploadThunks';
 
 type MessageType = 'success' | 'error';
 
@@ -19,6 +19,8 @@ interface DocumentUploadState {
   acknowledged: boolean;
   customerId: string | null;
   verificationStatus: string | null;
+  ackLoading: boolean;
+  ackMessage: string | null;
 }
 
 const initialState: DocumentUploadState = {
@@ -28,6 +30,8 @@ const initialState: DocumentUploadState = {
   acknowledged: true,
   customerId: null,
   verificationStatus: null,
+  ackLoading: false,
+  ackMessage: null,
 };
 
 const documentUploadSlice = createSlice({
@@ -51,6 +55,7 @@ const documentUploadSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // documents upload
     builder
       .addCase(uploadDocuments.pending, (state) => {
         state.loading = true;
@@ -59,10 +64,10 @@ const documentUploadSlice = createSlice({
       .addCase(uploadDocuments.fulfilled, (state, action) => {
         state.loading = false;
         state.customerId = action.payload.customerId;
-        // state.verificationStatus = action.payload.verificationStatus;
         state.currentStep = 'complete';
         state.message = {
-          text: '✅ Thanks! Your documents & acknowledgment have been received.',
+          text:
+            '✅ Thanks! Your documents & acknowledgment have been received.',
           type: 'success',
         };
       })
@@ -74,6 +79,23 @@ const documentUploadSlice = createSlice({
             'Upload error: Unexpected error. Please try again.',
           type: 'error',
         };
+      });
+
+    // acknowledgement only
+    builder
+      .addCase(uploadAcknowledgement.pending, (state) => {
+        state.ackLoading = true;
+        state.ackMessage = null;
+      })
+      .addCase(uploadAcknowledgement.fulfilled, (state) => {
+        state.ackLoading = false;
+        state.ackMessage = 'Acknowledgement saved successfully.';
+      })
+      .addCase(uploadAcknowledgement.rejected, (state, action) => {
+        state.ackLoading = false;
+        state.ackMessage =
+          action.payload?.message ||
+          'Failed to save acknowledgement. Please try again.';
       });
   },
 });
