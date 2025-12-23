@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import {Loader2, MapPin, Shield, Smartphone } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 import { useLocation } from '../hooks/useLocation';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -13,7 +13,6 @@ import {
 
 export default function ContextCollector() {
   const dispatch = useAppDispatch();
-
   const { locationInfo } = useLocation();
 
   const ackLoading = useAppSelector(selectUploadAckLoading);
@@ -46,22 +45,21 @@ export default function ContextCollector() {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
-            Initial Security Check
+            Thank You for Acknowledging
           </h2>
           <p className={`text-sm ${statusColor}`}>
-            {ackLoading && 'Collecting device and location details…'}
+            {ackLoading && 'Please wait a moment…'}
             {!ackLoading && ackMessage && ackMessage}
-            {!ackLoading && !ackMessage &&
-              'Device and location details recorded for verification.'}
+            {!ackLoading && !ackMessage && 'You’re ready to continue to the next step.'}
           </p>
         </div>
       </div>
-      {/* Footer note */}
+
+      {/* Short, neutral note */}
       <div className="mt-6 rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
         <p className="text-xs sm:text-sm text-emerald-800">
-          This step runs automatically and usually completes in a few seconds.
-          Once finished, you can safely proceed to upload your documents on the
-          next screen.
+          Thank you for confirming that you agree with our terms and service
+          process.
         </p>
       </div>
     </div>
