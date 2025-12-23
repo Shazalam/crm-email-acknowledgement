@@ -65,9 +65,9 @@ export async function POST(request: NextRequest) {
         requestId: context.requestId,
       }
     );
+
+
   } catch (err: any) {
-    // 5. Centralized unexpected error handling
-    console.error("POST /api/docusign error:", err);
 
     // If your validator throws plain Error with a specific message, you can map by message:
     if (err?.name === "MongoServerError") {
