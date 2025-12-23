@@ -1,4 +1,3 @@
-// app/api/customers/[bookingId]/route.ts
 import { NextRequest } from 'next/server';
 import connectDB from '@/lib/utils/db';
 import DocuSign from '@/models/DocuSign';
@@ -13,12 +12,12 @@ import {
 
 export async function GET(
   request: NextRequest,
-  context: { params: { bookingId: string } }
+  context: { params: Promise<{ bookingId: string }> }
 ) {
   const reqContext = createRequestContext(request);
 
   try {
-    const { bookingId } = context.params;
+    const { bookingId } = await context.params; // NOTE: await here
 
     if (!bookingId) {
       return badRequest(
@@ -43,9 +42,7 @@ export async function GET(
     }
 
     return success(
-      {
-        customer,
-      },
+      { customer },
       'Customer fetched successfully'
     );
   } catch (err: any) {
