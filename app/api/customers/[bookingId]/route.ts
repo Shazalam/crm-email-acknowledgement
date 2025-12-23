@@ -1,48 +1,70 @@
 // app/api/customers/[bookingId]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import connect from '../../../../lib/utils/db';
-import DocuSign, { IDocusign } from '@/models/DocuSign';
-
-type CustomerResponse = {
-  ok: boolean;
-  customer?: IDocusign | null;
-  message?: string;
-};
+import { NextRequest } from 'next/server';
+import connectDB from '@/lib/utils/db';
+import DocuSign from '@/models/DocuSign';
+import { createRequestContext } from '@/lib/helpers/backend-helpers/request-context.helper';
+import {
+  success,
+  badRequest,
+  notFound,
+  internalError,
+  ErrorCode,
+} from '@/lib/utils/apiResponse';
 
 export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ bookingId: string }> }
-): Promise<NextResponse<CustomerResponse>> {
-  try {
-    await connect();
+  request: NextRequest,
+  context: { params: { bookingId: string } }
+) {
+  const reqContext = createRequestContext(request);
 
-    // ✅ resolve params safely
-    const { bookingId } = await context.params;
+  try {
+    const { bookingId } = context.params;
 
     if (!bookingId) {
-      return NextResponse.json(
-        { ok: false, message: 'Booking ID is required' },
-        { status: 400 }
+      return badRequest(
+        'Booking ID is required',
+        ErrorCode.REQUIRED_FIELD,
+        { field: 'bookingId' },
+        reqContext
       );
     }
 
-    // Find customer by bookingId (ObjectId string)
-    const customer = await DocuSign.findOne({ bookingId }).lean<IDocusign>();
-    
+    await connectDB();
+
+    const customer = await DocuSign.findOne({ bookingId }).lean();
+
     if (!customer) {
-      return NextResponse.json(
-        { ok: false, message: 'Customer not found for this booking ID' },
-        { status: 404 }
+      return notFound(
+        'Customer not found for this booking ID',
+        ErrorCode.NOT_FOUND,
+        { bookingId },
+        reqContext
       );
     }
 
-    return NextResponse.json({ ok: true, customer }, { status: 200 });
-  } catch (error) {
-    console.error('Failed to fetch customer by bookingId:', error);
+    return success(
+      {
+        customer,
+      },
+      'Customer fetched successfully'
+    );
+  } catch (err: any) {
+    console.error('GET /api/customers/[bookingId] error:', err);
 
-    const message =
-      error instanceof Error ? error.message : 'An unexpected error occurred';
+    if (err?.name === 'MongoServerError') {
+      return internalError(
+        'Database error while fetching customer',
+        ErrorCode.DATABASE_ERROR,
+        { message: err.message },
+        reqContext
+      );
+    }
 
-    return NextResponse.json({ ok: false, message }, { status: 500 });
+    return internalError(
+      'Unexpected error while fetching customer',
+      ErrorCode.INTERNAL_ERROR,
+      { message: err?.message, stack: err?.stack },
+      reqContext
+    );
   }
 }
