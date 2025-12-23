@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import {Loader2, MapPin, Shield, Smartphone } from 'lucide-react';
 import { useLocation } from '../hooks/useLocation';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { useAppSelector } from '../hooks/useAppSelector';
@@ -13,14 +14,11 @@ import {
 export default function ContextCollector() {
   const dispatch = useAppDispatch();
 
-  const {
-    locationInfo,
-  } = useLocation();
+  const { locationInfo } = useLocation();
 
   const ackLoading = useAppSelector(selectUploadAckLoading);
   const ackMessage = useAppSelector(selectUploadAckMessage);
 
-  // Auto-acknowledge with device/location when location is ready
   useEffect(() => {
     if (!locationInfo) return;
 
@@ -32,34 +30,40 @@ export default function ContextCollector() {
     );
   }, [dispatch, locationInfo]);
 
+  const statusColor =
+    ackLoading ? 'text-emerald-600' : ackMessage ? 'text-emerald-700' : 'text-gray-700';
+
   return (
-    <div className="max-w-md bg-white p-6 rounded-2xl shadow mb-4">
-      <h1 className="text-xl font-semibold mb-3">
-        Verification Initialization
-      </h1>
-
-      {ackLoading && (
-        <p className="text-sm text-gray-600">
-          Collecting verification details…
+    <div className="bg-white rounded-3xl shadow-xl shadow-emerald-100 p-6 sm:p-8">
+      {/* Top status row */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center">
+          {ackLoading ? (
+            <Loader2 className="h-5 w-5 text-emerald-600 animate-spin" />
+          ) : (
+            <Shield className="h-5 w-5 text-emerald-600" />
+          )}
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Initial Security Check
+          </h2>
+          <p className={`text-sm ${statusColor}`}>
+            {ackLoading && 'Collecting device and location details…'}
+            {!ackLoading && ackMessage && ackMessage}
+            {!ackLoading && !ackMessage &&
+              'Device and location details recorded for verification.'}
+          </p>
+        </div>
+      </div>
+      {/* Footer note */}
+      <div className="mt-6 rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+        <p className="text-xs sm:text-sm text-emerald-800">
+          This step runs automatically and usually completes in a few seconds.
+          Once finished, you can safely proceed to upload your documents on the
+          next screen.
         </p>
-      )}
-
-      {!ackLoading && ackMessage && (
-        <p className="text-sm text-gray-700">
-          {ackMessage}
-        </p>
-      )}
-
-      {!ackLoading && !ackMessage && (
-        <p className="text-sm text-gray-700">
-          Device and location details recorded for verification.
-        </p>
-      )}
-
-      <p className="mt-3 text-xs text-gray-500">
-        Your device, browser, IP, and location information are collected only for
-        verification and fraud prevention.
-      </p>
+      </div>
     </div>
   );
 }
