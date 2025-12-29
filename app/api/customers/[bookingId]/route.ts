@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import connectDB from '@/lib/utils/db';
-import DocuSign from '@/models/DocuSign';
+import Customer from '@/models/DocuSign';
 import { createRequestContext } from '@/lib/helpers/backend-helpers/request-context.helper';
 import {
   success,
@@ -30,7 +30,7 @@ export async function GET(
 
     await connectDB();
 
-    const customer = await DocuSign.findOne({ bookingId }).lean();
+    const customer = await Customer.findOne({ bookingId }).lean();
 
     if (!customer) {
       return notFound(
