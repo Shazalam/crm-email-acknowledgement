@@ -34,7 +34,7 @@ export const getAccurateBrowserInfo = async (): Promise<BrowserInfo> => {
   const ua = navigator.userAgent;
   let fullBrowser = "Unknown Browser";
   let os = "Unknown OS";
-
+  
   try {
     if (navigator.brave && (await navigator.brave.isBrave())) {
       fullBrowser = "Brave (version hidden)";
