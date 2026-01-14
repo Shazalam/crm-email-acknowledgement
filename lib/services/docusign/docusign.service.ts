@@ -8,6 +8,7 @@ export async function saveDocusignDocument(
   front: CloudinaryUploadResult | null,
   back: CloudinaryUploadResult | null
 ) {
+  console.log("document upload")
   // 1. Check if doc already exists
   const existing = await Customer.findOne({ bookingId: body.bookingId });
 
@@ -21,8 +22,6 @@ export async function saveDocusignDocument(
     ip: body.ip ?? 'unknown',
     location: normalizeLocation(body.location),
     acknowledged: body.acknowledged ?? false,
-    // uploadedAt: new Date(),
-    // verificationStatus: 'pending',
   };
 
   // 2. If no existing doc → upsert with whatever we have
@@ -67,10 +66,12 @@ export async function saveDocusignDocument(
     frontImage: existing.frontImage,
     backImage: existing.backImage,
   };
-
+  console.log("document data =", partialUpdatePayload)
   // Optionally: if you want to update a single image when only that one comes:
   if (hasNewFront) partialUpdatePayload.frontImage = front!.url;
-  if (hasNewBack)  partialUpdatePayload.backImage = back!.url;
+
+  if (hasNewBack) partialUpdatePayload.backImage = back!.url;
+  console.log("second document upload")
 
   return Customer.findOneAndUpdate(
     { bookingId: body.bookingId },

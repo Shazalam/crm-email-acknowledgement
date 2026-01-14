@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
     // 4. Success response
     return created(
       {
-        customerId: customer._id.toString(),
-        // verificationStatus: customer.verificationStatus,
+        customerId: customer._id.toString()
       },
       "Document uploaded successfully",
       {
@@ -65,8 +64,6 @@ export async function POST(request: NextRequest) {
         requestId: context.requestId,
       }
     );
-
-
   } catch (err: any) {
 
     // If your validator throws plain Error with a specific message, you can map by message:

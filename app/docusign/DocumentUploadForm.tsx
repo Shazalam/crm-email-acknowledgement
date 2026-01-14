@@ -14,6 +14,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { setMessage } from '../redux/features/documentUpload/documentUploadSlice';
 import { uploadDocuments } from '../redux/features/documentUpload/documentUploadThunks';
 import { selectUploadAcknowledged, selectUploadLoading, selectUploadMessage, selectUploadStep } from '../redux/features/documentUpload/documentUploadSelectors';
+import { LocationPermissionModal } from './PermissionModal';
 
 export default function DocumentUploadForm() {
   const [frontFile, setFrontFile] = useState<File | null>(null);
@@ -30,9 +31,10 @@ export default function DocumentUploadForm() {
 
   const {
     locationInfo,
-    permission,
-    loading: locationLoading,
-    requestPermission
+    requestPermission,
+    showPermissionModal,
+    setShowPermissionModal,
+    browserInfo
   } = useLocation();
 
   const frontInputRef = useRef<HTMLInputElement | null>(null);
@@ -96,8 +98,9 @@ export default function DocumentUploadForm() {
         frontFile,
         backFile,
         acknowledged,
-        permission,
-        locationInfo
+        locationInfo,
+        browserInfo
+        // permission
       })
     );
   };
@@ -118,6 +121,21 @@ export default function DocumentUploadForm() {
 
   return (
     <div className="bg-white rounded-3xl shadow-xl p-6 sm:p-8">
+
+
+
+      {/* Show modal on page load */}
+      {
+        showPermissionModal && (
+          < LocationPermissionModal
+            isOpen={showPermissionModal}
+            onRequestLocation={requestPermission}
+            onDismiss={() => setShowPermissionModal(false)}
+          />
+        )
+
+      }
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FileUploadArea
@@ -129,7 +147,7 @@ export default function DocumentUploadForm() {
             onRemove={removeFile}
             loading={loading}
           />
-          
+
           <FileUploadArea
             type="back"
             file={backFile}
@@ -146,7 +164,7 @@ export default function DocumentUploadForm() {
             type="checkbox"
             id="acknowledge"
             checked={acknowledged}
-            // onChange={(e) => dispatch(setAcknowledged(e.target.checked))}
+            readOnly
             className="mt-1 h-4 w-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
           />
           <label htmlFor="acknowledge" className="text-sm text-gray-700">
@@ -181,42 +199,20 @@ export default function DocumentUploadForm() {
           </button>
         </div>
 
-        {permission !== 'granted' && (
-          <div className="rounded-2xl p-4 flex items-start space-x-3 bg-orange-50 border border-orange-200">
-            <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm text-orange-700 font-medium">Location Access Recommended</p>
-              <p className="text-sm text-orange-600 mt-1">
-                GPS location provides more accurate address verification. You can still submit with IP-based location.
-              </p>
-              <button
-                onClick={requestPermission}
-                type="button"
-                className="mt-2 px-4 py-2 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors cursor-pointer"
-              >
-                Allow Location Access
-              </button>
-            </div>
-          </div>
-        )}
-
         {message && (
           <div
-            className={`rounded-2xl p-4 flex items-start space-x-3 ${
-              message.type === 'error'
-                ? 'bg-red-50 border border-red-200'
-                : 'bg-green-50 border border-green-200'
-            }`}
+            className={`rounded-2xl p-4 flex items-start space-x-3 ${message.type === 'error'
+              ? 'bg-red-50 border border-red-200'
+              : 'bg-green-50 border border-green-200'
+              }`}
           >
             <AlertCircle
-              className={`h-5 w-5 ${
-                message.type === 'error' ? 'text-red-500' : 'text-green-500'
-              } mt-0.5 flex-shrink-0`}
+              className={`h-5 w-5 ${message.type === 'error' ? 'text-red-500' : 'text-green-500'
+                } mt-0.5 flex-shrink-0`}
             />
             <p
-              className={`text-sm ${
-                message.type === 'error' ? 'text-red-700' : 'text-green-700'
-              }`}
+              className={`text-sm ${message.type === 'error' ? 'text-red-700' : 'text-green-700'
+                }`}
             >
               {message.text}
             </p>

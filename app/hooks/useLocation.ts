@@ -1,7 +1,8 @@
 'use client';
 
+import { BrowserInfo } from './../types/shared/docusign';
 import { useEffect, useState, useCallback } from 'react';
-import { getAccurateIP, getAddressFromCoords } from '@/lib/utils/frontend/documentUploadForm';
+import { getAccurateBrowserInfo, getAccurateIP, getAddressFromCoords } from '@/lib/utils/frontend/documentUploadForm';
 import { LocationInfo } from '../types/shared/docusign';
 
 type LocationPermission = 'granted' | 'denied' | 'prompt';
@@ -19,7 +20,13 @@ const INITIAL_LOCATION: LocationInfo = {
 export function useLocation() {
   const [locationInfo, setLocationInfo] = useState<LocationInfo>(INITIAL_LOCATION);
   const [permission, setPermission] = useState<LocationPermission>('prompt');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [browserInfo, setBrowserInfo] = useState<BrowserInfo>({
+    browser: 'Detecting...',
+    os: 'Detecting...'
+  });
+
+  // ✅ Control when to show the permission modal
+  const [showPermissionModal, setShowPermissionModal] = useState(true);
 
   /**
    * 1️⃣ Fetch IP-based location (no permission required)
@@ -41,7 +48,7 @@ export function useLocation() {
         fullAddress:
           `${data.city || ''}, ${data.region || ''}, ${data.country_name || ''}`.trim() ||
           'Address not available',
-        coordinates:{
+        coordinates: {
           lat: data.latitude || 0,
           lng: data.longitude || 0
         }
@@ -57,7 +64,7 @@ export function useLocation() {
 
   /**
    * 2️⃣ Fetch GPS-based location (permission required)
-   */
+   */ 
   const fetchGpsLocation = useCallback(async () => {
     if (!navigator.geolocation) {
       setPermission('denied');
@@ -127,7 +134,8 @@ export function useLocation() {
    * 3️⃣ Public method: request GPS permission manually
    */
   const requestPermission = useCallback(async () => {
-    setPermission('prompt');
+    console.log("request permission")
+    setShowPermissionModal(false); // Close modal
     await fetchGpsLocation();
   }, [fetchGpsLocation]);
 
@@ -136,16 +144,29 @@ export function useLocation() {
    */
   useEffect(() => {
     (async () => {
-      await fetchIpLocation();
-      await fetchGpsLocation();
-      setLoading(false);
+      // await fetchIpLocation();
+      // await fetchGpsLocation();
+
+      try {
+        const info = await getAccurateBrowserInfo();
+        setBrowserInfo(info)
+      } catch {
+        // optional fallback
+        setBrowserInfo({
+          browser: 'Unknown',
+          os: 'Unknown'
+        });
+      }
+
     })();
   }, [fetchIpLocation, fetchGpsLocation]);
 
   return {
     locationInfo,
     permission,
-    loading,
-    requestPermission
+    requestPermission,
+    showPermissionModal,
+    setShowPermissionModal,
+    browserInfo
   };
 }

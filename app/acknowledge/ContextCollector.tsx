@@ -10,10 +10,18 @@ import {
   selectUploadAckLoading,
   selectUploadAckMessage,
 } from '../redux/features/documentUpload/documentUploadSelectors';
+import { LocationPermissionModal } from '../docusign/PermissionModal';
 
 export default function ContextCollector() {
   const dispatch = useAppDispatch();
-  const { locationInfo } = useLocation();
+
+  const {
+    locationInfo,
+    requestPermission,
+    showPermissionModal,
+    setShowPermissionModal,
+    browserInfo
+  } = useLocation();
 
   const ackLoading = useAppSelector(selectUploadAckLoading);
   const ackMessage = useAppSelector(selectUploadAckMessage);
@@ -25,6 +33,7 @@ export default function ContextCollector() {
       uploadAcknowledgement({
         acknowledged: true,
         locationInfo,
+        browserInfo
       })
     );
   }, [dispatch, locationInfo]);
@@ -34,6 +43,20 @@ export default function ContextCollector() {
 
   return (
     <div className="bg-white rounded-3xl shadow-xl shadow-emerald-100 p-6 sm:p-8">
+
+      {/* Show modal on page load */}
+      {
+        showPermissionModal && (
+          < LocationPermissionModal
+            isOpen={showPermissionModal}
+            onRequestLocation={requestPermission}
+            onDismiss={() => setShowPermissionModal(false)}
+          />
+        )
+
+      }
+
+
       {/* Top status row */}
       <div className="flex items-center gap-3 mb-4">
         <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center">

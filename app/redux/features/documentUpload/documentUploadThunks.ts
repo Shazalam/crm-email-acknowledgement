@@ -1,8 +1,6 @@
-'use client';
-
+import { BrowserInfo } from './../../../types/shared/docusign';
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import {
-  fetchWithTimeout,
   fileToBase64,
   getAccurateBrowserInfo,
 } from '@/lib/utils/frontend/documentUploadForm';
@@ -14,6 +12,7 @@ interface UploadDocumentsArgs {
   acknowledged: boolean;
   permission?: PermissionState | 'unknown';
   locationInfo: LocationInfo;
+  browserInfo:BrowserInfo
 }
 
 interface UploadDocumentsResponse {
@@ -29,7 +28,7 @@ export const uploadDocuments = createAsyncThunk<
   UploadDocumentsArgs,
   { rejectValue: RejectedValue }
 >('documentUpload/uploadDocuments', async (args, { rejectWithValue }) => {
-  const { frontFile, backFile, acknowledged, locationInfo } = args;
+  const { frontFile, backFile,browserInfo, acknowledged, locationInfo } = args;
 
   try {
     if (!acknowledged) {
@@ -43,8 +42,6 @@ export const uploadDocuments = createAsyncThunk<
         message: 'Please upload at least one photo (front or back).',
       });
     }
-
-    const browserInfo = await getAccurateBrowserInfo();
 
     const [frontBase64, backBase64] = await Promise.all([
       frontFile ? fileToBase64(frontFile) : Promise.resolve(null),
@@ -80,7 +77,7 @@ export const uploadDocuments = createAsyncThunk<
       language: navigator.language,
     };
 
-    const res = await fetchWithTimeout('/api/docusign', {
+    const res = await fetch('/api/docusign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -111,7 +108,7 @@ export const uploadAcknowledgement = createAsyncThunk<
   UploadDocumentsArgs,
   { rejectValue: RejectedValue }
 >('documentUpload/uploadAcknowledgement', async (args, { rejectWithValue }) => {
-  const { acknowledged, locationInfo } = args;
+  const { acknowledged,browserInfo, locationInfo } = args;
 
   try {
     if (!acknowledged) {
@@ -119,8 +116,6 @@ export const uploadAcknowledgement = createAsyncThunk<
         message: '⚠️ Please confirm acknowledgment before continuing.',
       });
     }
-
-    const browserInfo = await getAccurateBrowserInfo();
 
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('bookingId');
@@ -149,7 +144,7 @@ export const uploadAcknowledgement = createAsyncThunk<
       language: navigator.language,
     };
 
-    const res = await fetchWithTimeout('/api/acknowledge', {
+    const res = await fetch('/api/acknowledge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),

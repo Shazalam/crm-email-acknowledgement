@@ -2,7 +2,6 @@
 
 import { RootState } from "../../store/store";
 
-
 export const selectUploadLoading = (state: RootState) =>
   state.documentUpload.loading;
 export const selectUploadMessage = (state: RootState) =>
