@@ -56,7 +56,6 @@ export default function ContextCollector() {
 
       }
 
-
       {/* Top status row */}
       <div className="flex items-center gap-3 mb-4">
         <div className="h-10 w-10 rounded-2xl bg-emerald-50 flex items-center justify-center">
@@ -79,8 +78,8 @@ export default function ContextCollector() {
       </div>
 
       {/* Short, neutral note */}
-      <div className="mt-6 rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
-        <p className="text-xs sm:text-sm text-emerald-800">
+            <div className="mt-6 rounded-2xl bg-emerald-50 border border-emerald-100 p-4">
+              <p className="text-xs sm:text-sm text-emerald-800">
           Thank you for confirming that you agree with our terms and service
           process.
         </p>
